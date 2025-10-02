@@ -9,3 +9,5 @@ openai-whisper
 torch
 torchaudio
 python-multipart
+pandas 
+pytube
