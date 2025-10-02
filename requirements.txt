@@ -1,0 +1,11 @@
+fastapi
+httpx
+uvicorn
+pydantic
+python-dotenv
+yt-dlp
+gdown
+openai-whisper
+torch
+torchaudio
+python-multipart
