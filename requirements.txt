@@ -11,3 +11,4 @@ torchaudio
 python-multipart
 pandas 
 pytube
+crawlee

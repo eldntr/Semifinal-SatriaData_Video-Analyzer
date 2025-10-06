@@ -11,6 +11,7 @@ from app.services.google_drive_downloader import GoogleDriveDownloaderService
 from app.services.instagram_scraper import InstagramScraperService
 from app.services.media_converter import VideoAudioConverterService
 from app.instagram.client import InstagramClient
+from app.instagram.comment_fetcher import InstagramCrawleeCommentFetcher
 from app.instagram.storage import MediaStorage
 from app.transcription.storage import TranscriptionStorage
 from app.transcription.service import WhisperTranscriberService
@@ -21,7 +22,13 @@ def get_instagram_service() -> InstagramScraperService:
     settings = get_settings()
     client = InstagramClient(settings)
     storage = MediaStorage(settings)
-    return InstagramScraperService(client=client, storage=storage, settings=settings)
+    comment_fetcher = InstagramCrawleeCommentFetcher(settings)
+    return InstagramScraperService(
+        client=client,
+        storage=storage,
+        settings=settings,
+        comment_fetcher=comment_fetcher,
+    )
 
 
 @lru_cache(maxsize=1)

@@ -35,6 +35,10 @@ class InstagramClient:
             "merge_output_format": "mp4",
             "getcomments": get_comments,
         }
+        if get_comments:
+            params["max_comments"] = self._settings.max_comments
+        else:
+            params.pop("max_comments", None)
         if not download:
             params.pop("outtmpl", None)
         if self._settings.cookies_path:

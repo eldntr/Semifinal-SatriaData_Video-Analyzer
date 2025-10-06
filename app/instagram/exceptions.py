@@ -16,3 +16,7 @@ class InstagramParsingError(InstagramScraperError):
 
 class MediaDownloadError(InstagramScraperError):
     """Raised when the video download fails."""
+
+class InstagramCommentFetchError(InstagramScraperError):
+    """Raised when comment enrichment fails."""
+

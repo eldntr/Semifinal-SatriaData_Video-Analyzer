@@ -7,7 +7,9 @@ from typing import List
 
 from app.config import Settings
 from app.instagram.client import InstagramClient
+from app.instagram.comment_fetcher import InstagramCrawleeCommentFetcher
 from app.instagram.exceptions import (
+    InstagramCommentFetchError,
     InstagramParsingError,
     InstagramScraperError,
     MediaDownloadError,
@@ -27,10 +29,12 @@ class InstagramScraperService:
         client: InstagramClient,
         storage: MediaStorage,
         settings: Settings,
+        comment_fetcher: InstagramCrawleeCommentFetcher | None = None,
     ) -> None:
         self._client = client
         self._storage = storage
         self._settings = settings
+        self._comment_fetcher = comment_fetcher
 
     async def scrape(
         self,
@@ -53,6 +57,36 @@ class InstagramScraperService:
 
         if not post.video_url:
             raise InstagramParsingError("The provided URL does not contain a downloadable video")
+
+        if (
+            self._settings.include_comments
+            and self._comment_fetcher
+            and len(comments) < self._settings.max_comments
+        ):
+            existing_ids = [comment.id for comment in comments if comment.id]
+            try:
+                extra_comments = await self._comment_fetcher.fetch_comments(
+                    shortcode=post.shortcode,
+                    limit=self._settings.max_comments,
+                    existing_ids=existing_ids,
+                )
+            except InstagramCommentFetchError as exc:
+                logger.warning(
+                    "Unable to fetch additional Instagram comments for %s: %s",
+                    post.shortcode,
+                    exc,
+                )
+            else:
+                if extra_comments:
+                    comments.extend(extra_comments)
+                    logger.debug("Enriched %d additional Instagram comments for %s", len(extra_comments), post.shortcode)
+
+        if self._settings.include_comments and len(comments) > self._settings.max_comments:
+            comments = comments[: self._settings.max_comments]
+
+        if self._settings.include_comments:
+            original_count = post.comment_count or 0
+            post.comment_count = max(original_count, len(comments))
 
         video_path: Path | None = None
         if download_video:
