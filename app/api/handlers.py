@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from typing import Optional
@@ -20,13 +21,14 @@ from app.instagram.exceptions import (
     InvalidInstagramUrlError,
     MediaDownloadError,
 )
-from app.instagram.types import InstagramComment, InstagramPost
+from app.instagram.types import InstagramComment, InstagramPost, InstagramProfile
 from app.media.exceptions import (
     MediaConversionError,
     MediaProcessingError,
 )
 from app.models import (
     Comment,
+    UserProfile,
     DriveDownloadRequest,
     DriveDownloadResponse,
     DriveFileMetadata,
@@ -54,6 +56,20 @@ gdrive_router = APIRouter(prefix="/google-drive", tags=["google-drive"])
 media_router = APIRouter(prefix="/media", tags=["media"])
 
 
+def _to_profile(profile: InstagramProfile | None) -> UserProfile | None:
+    if profile is None:
+        return None
+    return UserProfile(
+        username=profile.username,
+        full_name=profile.full_name,
+        biography=profile.biography,
+        posts=profile.posts,
+        followers=profile.followers,
+        following=profile.following,
+        profile_pic_url=profile.profile_pic_url,
+    )
+
+
 def _to_comment(model: InstagramComment) -> Comment:
     return Comment(
         id=model.id,
@@ -61,6 +77,7 @@ def _to_comment(model: InstagramComment) -> Comment:
         text=model.text,
         like_count=model.like_count,
         created_at=model.created_at,
+        profile=_to_profile(model.profile),
     )
 
 
@@ -77,10 +94,14 @@ def _to_metadata(model: InstagramPost) -> VideoMetadata:
         video_duration=model.video_duration,
         video_url=model.video_url,
         thumbnail_url=model.thumbnail_url,
+        audio_title=model.audio_title,
+        audio_artist=model.audio_artist,
+        audio_id=model.audio_id,
+        audio_url=model.audio_url,
         hashtags=model.hashtags,
         mentions=model.mentions,
+        owner_profile=_to_profile(model.owner_profile),
     )
-
 
 @instagram_router.post("/scrape", response_model=ScrapeResponse)
 async def scrape_instagram_video(

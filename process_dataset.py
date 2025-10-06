@@ -20,6 +20,9 @@ from app.instagram.client import InstagramClient
 from app.instagram.exceptions import InstagramScraperError
 from app.instagram.storage import MediaStorage
 from app.services.instagram_scraper import InstagramScraperService
+from app.instagram.comment_fetcher import InstagramCrawleeCommentFetcher
+from app.instagram.view_fetcher import InstagramCrawleeViewFetcher
+from app.instagram.profile_fetcher import InstagramProfileFetcher
 from download_utils import download_video, get_link_type
 
 
@@ -293,6 +296,9 @@ def main(argv: Optional[list[str]] = None) -> int:
             client=InstagramClient(settings),
             storage=MediaStorage(settings),
             settings=settings,
+            comment_fetcher=InstagramCrawleeCommentFetcher(settings),
+            view_fetcher=InstagramCrawleeViewFetcher(settings),
+            profile_fetcher=InstagramProfileFetcher(settings),
         )
     except Exception as exc:  # pragma: no cover - defensive
         print(f"⚠️ Tidak dapat menginisialisasi layanan Instagram: {exc}")

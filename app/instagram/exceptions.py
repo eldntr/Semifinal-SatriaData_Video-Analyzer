@@ -20,3 +20,11 @@ class MediaDownloadError(InstagramScraperError):
 class InstagramCommentFetchError(InstagramScraperError):
     """Raised when comment enrichment fails."""
 
+
+class InstagramViewFetchError(InstagramScraperError):
+    """Raised when view count enrichment fails."""
+
+
+class InstagramProfileFetchError(InstagramScraperError):
+    """Raised when profile enrichment fails."""
+

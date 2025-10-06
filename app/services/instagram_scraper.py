@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 from app.config import Settings
 from app.instagram.client import InstagramClient
@@ -11,12 +11,16 @@ from app.instagram.comment_fetcher import InstagramCrawleeCommentFetcher
 from app.instagram.exceptions import (
     InstagramCommentFetchError,
     InstagramParsingError,
+    InstagramProfileFetchError,
     InstagramScraperError,
+    InstagramViewFetchError,
     MediaDownloadError,
 )
+from app.instagram.profile_fetcher import InstagramProfileFetcher
+from app.instagram.view_fetcher import InstagramCrawleeViewFetcher
 from app.instagram.parser import parse_info_payload
 from app.instagram.storage import MediaStorage
-from app.instagram.types import InstagramComment, ScrapedMedia
+from app.instagram.types import InstagramComment, InstagramProfile, ScrapedMedia
 from app.instagram.url_utils import parse_instagram_url
 
 
@@ -30,11 +34,15 @@ class InstagramScraperService:
         storage: MediaStorage,
         settings: Settings,
         comment_fetcher: InstagramCrawleeCommentFetcher | None = None,
+        view_fetcher: InstagramCrawleeViewFetcher | None = None,
+        profile_fetcher: InstagramProfileFetcher | None = None,
     ) -> None:
         self._client = client
         self._storage = storage
         self._settings = settings
         self._comment_fetcher = comment_fetcher
+        self._view_fetcher = view_fetcher
+        self._profile_fetcher = profile_fetcher
 
     async def scrape(
         self,
@@ -87,6 +95,118 @@ class InstagramScraperService:
         if self._settings.include_comments:
             original_count = post.comment_count or 0
             post.comment_count = max(original_count, len(comments))
+
+        owner_stub: dict[str, Any] | None = None
+        if self._view_fetcher:
+            try:
+                details = await self._view_fetcher.fetch_media_details(post.shortcode)
+            except InstagramViewFetchError as exc:
+                logger.warning(
+                    "Unable to fetch Instagram metrics for %s: %s",
+                    post.shortcode,
+                    exc,
+                )
+            else:
+                view_count = details.get("view_count")
+                if view_count is not None:
+                    post.view_count = view_count
+                    logger.debug(
+                        "Enriched Instagram view count for %s to %s",
+                        post.shortcode,
+                        view_count,
+                    )
+                total_comments = details.get("comment_count")
+                if total_comments is not None:
+                    current_count = post.comment_count or 0
+                    post.comment_count = max(current_count, total_comments)
+                caption = details.get("caption")
+                if caption:
+                    post.caption = caption
+                audio = details.get("audio") or {}
+                post.audio_title = audio.get("title")
+                post.audio_artist = audio.get("artist")
+                post.audio_id = audio.get("audio_id")
+                post.audio_url = audio.get("audio_url")
+                owner_stub = details.get("owner") if isinstance(details.get("owner"), dict) else None
+                if owner_stub:
+                    username = owner_stub.get("username")
+                    full_name = owner_stub.get("full_name")
+                    if username:
+                        post.username = username
+                    if full_name:
+                        post.full_name = full_name
+                    post.owner_profile = InstagramProfile(
+                        username=username or post.username,
+                        full_name=full_name or post.full_name,
+                        biography=owner_stub.get("biography"),
+                        posts=owner_stub.get("posts"),
+                        followers=owner_stub.get("followers"),
+                        following=owner_stub.get("following"),
+                        profile_pic_url=owner_stub.get("profile_pic_url"),
+                    )
+        profile_lookup: dict[str, InstagramProfile] = {}
+        if self._profile_fetcher:
+            owner_username: str | None = None
+            if post.owner_profile and post.owner_profile.username:
+                owner_username = post.owner_profile.username
+            elif owner_stub and owner_stub.get("username"):
+                owner_username = owner_stub.get("username")
+            elif post.username:
+                owner_username = post.username
+
+            limit = min(len(comments), self._settings.max_comments, 30)
+            seen: set[str] = set()
+            comment_usernames: list[str] = []
+            for comment in comments:
+                if len(comment_usernames) >= limit:
+                    break
+                username = (comment.username or "").strip()
+                if not username:
+                    continue
+                key = username.lower()
+                if key in seen:
+                    continue
+                seen.add(key)
+                comment_usernames.append(username)
+
+            for username in comment_usernames:
+                key = username.lower()
+                if key in profile_lookup:
+                    continue
+                try:
+                    profile = await self._profile_fetcher.fetch_profile(username)
+                except InstagramProfileFetchError as exc:
+                    logger.warning(
+                        "Unable to fetch profile for %s: %s",
+                        username,
+                        exc,
+                    )
+                    continue
+                if profile:
+                    profile_lookup[key] = profile
+
+            for comment in comments:
+                profile = profile_lookup.get((comment.username or "").lower())
+                if profile:
+                    comment.profile = profile
+
+            if owner_username:
+                owner_key = owner_username.lower()
+                owner_profile = profile_lookup.get(owner_key)
+                if owner_profile is None:
+                    try:
+                        owner_profile = await self._profile_fetcher.fetch_profile(owner_username)
+                    except InstagramProfileFetchError as exc:
+                        logger.warning(
+                            "Unable to fetch profile for owner %s: %s",
+                            owner_username,
+                            exc,
+                        )
+                    else:
+                        if owner_profile:
+                            profile_lookup[owner_key] = owner_profile
+                if owner_profile:
+                    post.owner_profile = owner_profile
 
         video_path: Path | None = None
         if download_video:

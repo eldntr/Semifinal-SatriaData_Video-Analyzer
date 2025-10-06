@@ -1,7 +1,7 @@
+
 from __future__ import annotations
 
 from functools import lru_cache
-from pathlib import Path
 
 from app.config import Settings, get_settings
 from app.google_drive.client import GoogleDriveClient
@@ -12,6 +12,8 @@ from app.services.instagram_scraper import InstagramScraperService
 from app.services.media_converter import VideoAudioConverterService
 from app.instagram.client import InstagramClient
 from app.instagram.comment_fetcher import InstagramCrawleeCommentFetcher
+from app.instagram.profile_fetcher import InstagramProfileFetcher
+from app.instagram.view_fetcher import InstagramCrawleeViewFetcher
 from app.instagram.storage import MediaStorage
 from app.transcription.storage import TranscriptionStorage
 from app.transcription.service import WhisperTranscriberService
@@ -23,11 +25,15 @@ def get_instagram_service() -> InstagramScraperService:
     client = InstagramClient(settings)
     storage = MediaStorage(settings)
     comment_fetcher = InstagramCrawleeCommentFetcher(settings)
+    view_fetcher = InstagramCrawleeViewFetcher(settings)
+    profile_fetcher = InstagramProfileFetcher(settings)
     return InstagramScraperService(
         client=client,
         storage=storage,
         settings=settings,
         comment_fetcher=comment_fetcher,
+        view_fetcher=view_fetcher,
+        profile_fetcher=profile_fetcher,
     )
 
 

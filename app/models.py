@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -14,12 +15,23 @@ class InstagramDownloadRequest(BaseModel):
     url: HttpUrl = Field(..., description="Public Instagram post or reel URL")
 
 
+class UserProfile(BaseModel):
+    username: str
+    full_name: Optional[str] = None
+    biography: Optional[str] = None
+    posts: Optional[int] = None
+    followers: Optional[int] = None
+    following: Optional[int] = None
+    profile_pic_url: Optional[AnyHttpUrl] = None
+
+
 class Comment(BaseModel):
     id: str
     username: str
     text: str
     like_count: int = 0
     created_at: Optional[datetime] = None
+    profile: Optional[UserProfile] = None
 
 
 class VideoMetadata(BaseModel):
@@ -34,8 +46,13 @@ class VideoMetadata(BaseModel):
     video_duration: Optional[float] = None
     video_url: Optional[HttpUrl] = None
     thumbnail_url: Optional[HttpUrl] = None
+    audio_title: Optional[str] = None
+    audio_artist: Optional[str] = None
+    audio_id: Optional[str] = None
+    audio_url: Optional[AnyHttpUrl] = None
     hashtags: List[str] = Field(default_factory=list)
     mentions: List[str] = Field(default_factory=list)
+    owner_profile: Optional[UserProfile] = None
 
 
 class ScrapeResponse(BaseModel):
