@@ -51,6 +51,11 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         action="store_true",
         help="Timpa artefak yang sudah ada (video, audio, transkrip, metadata)",
     )
+    parser.add_argument(
+        "--instagram-scrape-only",
+        action="store_true",
+        help="Hanya lakukan scrape metadata untuk tautan Instagram/Reels tanpa mengunduh video atau membuat transkrip",
+    )
     return parser.parse_args(argv)
 
 
@@ -145,6 +150,7 @@ class DatasetProcessor:
         cookie_file: Optional[Path] = None,
         overwrite: bool = False,
         resume: bool = False,
+        instagram_scrape_only: bool = False,
     ) -> None:
         self._settings = settings
         self._dataset_root = dataset_root
@@ -153,6 +159,7 @@ class DatasetProcessor:
         self._cookie_file = cookie_file
         self._overwrite = overwrite
         self._resume = resume
+        self._instagram_scrape_only = instagram_scrape_only
 
     def process_row(self, video_id: str, url: str, label: Optional[str]) -> None:
         if not url:
@@ -169,6 +176,19 @@ class DatasetProcessor:
         metadata_path = folder / "metadata.json"
 
         link_type = get_link_type(url)
+
+        if self._instagram_scrape_only and link_type != "instagram":
+            print(f"[skip] Melewati ID {video_id} karena bukan tautan Instagram.")
+            return
+
+        if self._instagram_scrape_only:
+            required_paths = (scrape_path, metadata_path)
+            if self._resume and all(path.exists() for path in required_paths):
+                print(f"[resume] ID {video_id} sudah memiliki hasil scrape, dilewati.")
+                return
+            self._ensure_instagram_scrape(url, scrape_path)
+            self._write_metadata(metadata_path, video_id, url, label, link_type)
+            return
 
         if self._resume and all(
             path.exists()
@@ -313,6 +333,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         cookie_file=cookie_path,
         overwrite=args.overwrite,
         resume=args.resume,
+        instagram_scrape_only=args.instagram_scrape_only,
     )
 
     try:
