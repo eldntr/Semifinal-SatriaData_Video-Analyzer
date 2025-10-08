@@ -224,4 +224,5 @@ class InstagramScraperService:
             post=post,
             comments=normalized_comments,
             video_path=str(video_path) if video_path else None,
+            fetched_comment_count=len(normalized_comments),
         )

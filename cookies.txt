@@ -4,11 +4,12 @@
 .instagram.com	TRUE	/	TRUE	1790512644	ps_n	1
 .instagram.com	TRUE	/	TRUE	1790512644	datr	BLapaFXdSru68gjR9pjYFRDu
 .instagram.com	TRUE	/	TRUE	1787488643	ig_nrcb	1
-.instagram.com	TRUE	/	TRUE	1767701874	ds_user_id	77152011316
-.instagram.com	TRUE	/	TRUE	1794486108	csrftoken	b70pHWj7T7cYqu6gGio73GnfIy86tNLK
+.instagram.com	TRUE	/	TRUE	1767703559	ds_user_id	77470969142
+.instagram.com	TRUE	/	TRUE	1794487559	csrftoken	FvVCSPGuPGsSbI7iDoITrIwQJ0U8RV7r
 .instagram.com	TRUE	/	TRUE	1787488643	ig_did	85185060-B2D7-4CA3-B044-1D661BAEAE7A
 .instagram.com	TRUE	/	TRUE	1790512644	ps_l	1
-.instagram.com	TRUE	/	TRUE	1760530501	wd	860x560
+.instagram.com	TRUE	/	TRUE	1760531139	wd	860x560
 .instagram.com	TRUE	/	TRUE	1793783064	mid	aNudFwALAAEMgk3fxJmiscUxwYDp
-.instagram.com	TRUE	/	TRUE	1760530501	dpr	1.5
-.instagram.com	TRUE	/	TRUE	0	rur	"HIL\05477152011316\0541791461873:01feddbdfa8a48db644bd9db3139e4b5f1f733f74f18fc220cbf84ac73bc986b69aea10d"
+.instagram.com	TRUE	/	TRUE	1791462327	sessionid	77470969142%3AKWCR7RK1sfNnNJ%3A11%3AAYjX8RLVM69sGAjDK8eBqIxUTBEsr4Gi8sDB66CE4w
+.instagram.com	TRUE	/	TRUE	1760531139	dpr	1.5
+.instagram.com	TRUE	/	TRUE	0	rur	"EAG\05477470969142\0541791463558:01fe202085f5ac330699d30a4d43a74bf1d9a1763c71715bbce0e4636fab8d14a4de465a"

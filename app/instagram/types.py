@@ -54,3 +54,4 @@ class ScrapedMedia:
     post: InstagramPost
     comments: List[InstagramComment]
     video_path: Optional[str]
+    fetched_comment_count: int = 0

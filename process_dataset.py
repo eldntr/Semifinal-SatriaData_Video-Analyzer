@@ -52,6 +52,10 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         help="Timpa artefak yang sudah ada (video, audio, transkrip, metadata)",
     )
     parser.add_argument(
+        "--overwrite-from-id",
+        help="Aktifkan overwrite mulai dari ID tertentu (berdasarkan urutan/angka ID di CSV)",
+    )
+    parser.add_argument(
         "--instagram-scrape-only",
         action="store_true",
         help="Hanya lakukan scrape metadata untuk tautan Instagram/Reels tanpa mengunduh video atau membuat transkrip",
@@ -149,6 +153,7 @@ class DatasetProcessor:
         whisper_model: whisper.Whisper,
         cookie_file: Optional[Path] = None,
         overwrite: bool = False,
+        overwrite_from_id: Optional[str] = None,
         resume: bool = False,
         instagram_scrape_only: bool = False,
     ) -> None:
@@ -158,10 +163,16 @@ class DatasetProcessor:
         self._whisper_model = whisper_model
         self._cookie_file = cookie_file
         self._overwrite = overwrite
+        self._overwrite_from_id = overwrite_from_id.strip() if isinstance(overwrite_from_id, str) else None
+        self._overwrite_from_id_numeric = (
+            int(self._overwrite_from_id) if self._overwrite_from_id and self._overwrite_from_id.isdigit() else None
+        )
+        self._overwrite_triggered = overwrite or self._overwrite_from_id is None
         self._resume = resume
         self._instagram_scrape_only = instagram_scrape_only
 
     def process_row(self, video_id: str, url: str, label: Optional[str]) -> None:
+        self._update_overwrite_state(video_id)
         if not url:
             print(f"⚠️ Melewati ID {video_id} karena URL kosong.")
             return
@@ -211,6 +222,20 @@ class DatasetProcessor:
         self._ensure_audio(mp4_path, mp3_path)
         self._ensure_transcript(mp3_path, transcript_path)
         self._write_metadata(metadata_path, video_id, url, label, link_type)
+
+    def _update_overwrite_state(self, raw_video_id: str) -> None:
+        if self._overwrite_triggered:
+            return
+
+        video_id = raw_video_id.strip()
+        activate = video_id == (self._overwrite_from_id or "")
+        if not activate and self._overwrite_from_id_numeric is not None and video_id.isdigit():
+            activate = int(video_id) >= self._overwrite_from_id_numeric
+
+        if activate:
+            self._overwrite = True
+            self._overwrite_triggered = True
+            print(f"[overwrite] Mulai menimpa artefak mulai ID {raw_video_id}.")
 
     def _ensure_video(self, video_id: str, url: str, destination: Path) -> None:
         if destination.exists() and not self._overwrite:
@@ -284,6 +309,10 @@ class DatasetProcessor:
         with metadata_path.open("w", encoding="utf-8") as handle:
             json.dump(payload, handle, ensure_ascii=False, indent=2)
 
+    @property
+    def has_overwrite_started(self) -> bool:
+        return self._overwrite_triggered
+
 
 def _expand_path(path: Path) -> Path:
     return path.expanduser().resolve()
@@ -292,6 +321,9 @@ def _expand_path(path: Path) -> Path:
 def main(argv: Optional[list[str]] = None) -> int:
     args = parse_args(argv)
     settings = get_settings()
+
+    if args.overwrite and args.overwrite_from_id:
+        print("[info] --overwrite aktif; --overwrite-from-id dianggap terpenuhi sejak awal.")
 
     csv_fallback = Path(os.getenv("BATCH_INPUT_CSV", "Data Problem Kedua.csv"))
     csv_path = _expand_path(args.input) if args.input else _expand_path(csv_fallback)
@@ -332,6 +364,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         whisper_model=whisper_model,
         cookie_file=cookie_path,
         overwrite=args.overwrite,
+        overwrite_from_id=args.overwrite_from_id,
         resume=args.resume,
         instagram_scrape_only=args.instagram_scrape_only,
     )
@@ -366,6 +399,9 @@ def main(argv: Optional[list[str]] = None) -> int:
             processor.process_row(video_id, url, label)
         except Exception as exc:
             print(f"❌ Terjadi kesalahan pada ID {video_id}: {exc}")
+
+    if args.overwrite_from_id and not processor.has_overwrite_started:
+        print(f"[warning] ID {args.overwrite_from_id} tidak ditemukan; overwrite tidak pernah aktif.")
 
     print("\nSelesai memproses seluruh data.")
     return 0
