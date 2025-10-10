@@ -36,7 +36,7 @@ class Settings:
     media_directory: Path = Path(os.getenv("MEDIA_DIR", "downloads"))
     user_agent: str = os.getenv("INSTAGRAM_USER_AGENT", DEFAULT_USER_AGENT)
     include_comments: bool = _as_bool(os.getenv("INSTAGRAM_INCLUDE_COMMENTS", "true"), default=True)
-    max_comments: int = _as_int(os.getenv("INSTAGRAM_MAX_COMMENTS"), default=200)
+    max_comments: int = _as_int(os.getenv("INSTAGRAM_MAX_COMMENTS"), default=100)
     cookies_path: Optional[Path] = None
     ytdlp_format: str = os.getenv("INSTAGRAM_YTDLP_FORMAT", DEFAULT_YTDLP_FORMAT)
     ytdlp_retries: int = _as_int(os.getenv("INSTAGRAM_YTDLP_RETRIES"), default=3)

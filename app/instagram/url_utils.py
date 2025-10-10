@@ -28,11 +28,18 @@ def parse_instagram_url(url: str) -> ParsedInstagramUrl:
     if len(path_parts) < 2:
         raise InvalidInstagramUrlError("Unsupported Instagram URL format")
 
-    entity = path_parts[0].lower()
-    if entity not in _VALID_PATH_PREFIXES:
+    entity_idx: int | None = None
+    for idx, part in enumerate(path_parts):
+        if part.lower() in _VALID_PATH_PREFIXES:
+            entity_idx = idx
+            break
+
+    if entity_idx is None or entity_idx + 1 >= len(path_parts):
         raise InvalidInstagramUrlError("Unsupported Instagram URL format")
 
-    shortcode = path_parts[1]
+    entity = path_parts[entity_idx].lower()
+
+    shortcode = path_parts[entity_idx + 1]
     if not _SHORTCODE_RE.match(shortcode):
         raise InvalidInstagramUrlError("Invalid Instagram shortcode")
 
