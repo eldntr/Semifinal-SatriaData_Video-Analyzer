@@ -5,6 +5,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
+
+_ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv()
+load_dotenv(_ENV_PATH, override=False)
 
 def _as_bool(value: str, *, default: bool = False) -> bool:
     if value is None:
@@ -15,6 +20,13 @@ def _as_bool(value: str, *, default: bool = False) -> bool:
 def _as_int(value: str, *, default: int) -> int:
     try:
         return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_float(value: str, *, default: float) -> float:
+    try:
+        return float(value)
     except (TypeError, ValueError):
         return default
 
@@ -46,6 +58,8 @@ class Settings:
     whisper_device: str = os.getenv("WHISPER_DEVICE", "auto")
     whisper_compute_type: str = os.getenv("WHISPER_COMPUTE_TYPE", "auto")
     whisper_batch_size: int = _as_int(os.getenv("WHISPER_BATCH_SIZE"), default=8)
+    genai_api_key: Optional[str] = os.getenv("GENAI_API_KEY")
+    genai_model: str = os.getenv("GENAI_MODEL", "models/gemini-2.5-pro")
 
 
 _settings: Settings | None = None
@@ -72,5 +86,7 @@ def get_settings() -> Settings:
         media_dir.mkdir(parents=True, exist_ok=True)
         object.__setattr__(settings, "media_directory", media_dir)
         object.__setattr__(settings, "cookies_path", _resolve_cookies_path())
+        if settings.genai_api_key:
+            object.__setattr__(settings, "genai_api_key", settings.genai_api_key.strip() or None)
         _settings = settings
     return _settings

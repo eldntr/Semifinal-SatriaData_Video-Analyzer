@@ -101,3 +101,52 @@ class TranscriptionResponse(BaseModel):
     text: str
     language: Optional[str]
     segments: List[TranscriptionSegment] = Field(default_factory=list)
+
+
+class ChapterSegment(BaseModel):
+    id: Optional[int] = None
+    start: float
+    end: float
+    text: str
+
+
+class ChapterRequest(BaseModel):
+    text: str
+    language: Optional[str] = None
+    segments: List[ChapterSegment]
+
+
+class ChapterItem(BaseModel):
+    start_time: str
+    title: str
+
+
+class ChapterResponse(BaseModel):
+    chapters: List[ChapterItem] = Field(default_factory=list)
+
+
+class SummaryRequest(BaseModel):
+    text: str
+    language: Optional[str] = None
+    segments: List[ChapterSegment] = Field(default_factory=list)
+
+
+class SummaryResponse(BaseModel):
+    ringkasan: str
+    judul: str
+    topik: str
+
+
+class WordCloudRequest(BaseModel):
+    text: str
+    language: Optional[str] = None
+    segments: List[ChapterSegment] = Field(default_factory=list)
+    width: Optional[int] = Field(default=800, ge=100)
+    height: Optional[int] = Field(default=None, ge=100)
+    background_color: Optional[str] = Field(default="white")
+    colormap: Optional[str] = Field(default="viridis")
+    min_font_size: Optional[int] = Field(default=10, ge=1)
+
+
+class WordCloudResponse(BaseModel):
+    image_path: str

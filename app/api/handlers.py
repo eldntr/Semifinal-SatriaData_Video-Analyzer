@@ -10,6 +10,9 @@ from app.dependencies import (
     get_instagram_service,
     get_media_converter_service,
     get_transcription_service,
+    get_chapter_generation_service,
+    get_transcript_summary_service,
+    get_wordcloud_generation_service,
 )
 from app.google_drive.exceptions import (
     GoogleDriveDownloadError,
@@ -39,10 +42,28 @@ from app.models import (
     TranscriptionSegment,
     VideoMetadata,
     VideoToAudioResponse,
+    ChapterRequest,
+    ChapterResponse,
+    SummaryRequest,
+    SummaryResponse,
+    WordCloudRequest,
+    WordCloudResponse,
 )
 from app.services.google_drive_downloader import GoogleDriveDownloaderService
 from app.services.instagram_scraper import InstagramScraperService
 from app.services.media_converter import VideoAudioConverterService
+from app.services.chapter_generator import (
+    ChapterGenerationError,
+    ChapterGenerationService,
+)
+from app.services.transcript_summary import (
+    TranscriptSummaryError,
+    TranscriptSummaryService,
+)
+from app.services.wordcloud_generator import (
+    WordCloudGenerationError,
+    WordCloudGenerationService,
+)
 from app.transcription.exceptions import (
     TranscriptionError,
     TranscriptionModelError,
@@ -54,6 +75,9 @@ router = APIRouter()
 instagram_router = APIRouter(prefix="/instagram", tags=["instagram"])
 gdrive_router = APIRouter(prefix="/google-drive", tags=["google-drive"])
 media_router = APIRouter(prefix="/media", tags=["media"])
+chapters_router = APIRouter(prefix="/chapters", tags=["chapters"])
+summary_router = APIRouter(prefix="/summary", tags=["summary"])
+wordcloud_router = APIRouter(prefix="/wordcloud", tags=["wordcloud"])
 
 
 def _to_profile(profile: InstagramProfile | None) -> UserProfile | None:
@@ -229,6 +253,52 @@ async def transcribe_audio(
     )
 
 
+@chapters_router.post("/generate", response_model=ChapterResponse)
+async def generate_chapters(
+    request: ChapterRequest,
+    service: ChapterGenerationService = Depends(get_chapter_generation_service),
+) -> ChapterResponse:
+    try:
+        items = await service.generate(request)
+    except ChapterGenerationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+    return ChapterResponse(chapters=items)
+
+
+@summary_router.post("/generate", response_model=SummaryResponse)
+async def summarize_transcript(
+    request: SummaryRequest,
+    service: TranscriptSummaryService = Depends(get_transcript_summary_service),
+) -> SummaryResponse:
+    try:
+        return await service.summarize(request)
+    except TranscriptSummaryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+
+@wordcloud_router.post("/generate", response_model=WordCloudResponse)
+async def generate_wordcloud(
+    request: WordCloudRequest,
+    service: WordCloudGenerationService = Depends(get_wordcloud_generation_service),
+) -> WordCloudResponse:
+    try:
+        return service.generate(request)
+    except WordCloudGenerationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+
 router.include_router(instagram_router)
 router.include_router(gdrive_router)
 router.include_router(media_router)
+router.include_router(chapters_router)
+router.include_router(summary_router)
+router.include_router(wordcloud_router)

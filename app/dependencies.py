@@ -10,6 +10,9 @@ from app.media.storage import ConversionStorage
 from app.services.google_drive_downloader import GoogleDriveDownloaderService
 from app.services.instagram_scraper import InstagramScraperService
 from app.services.media_converter import VideoAudioConverterService
+from app.services.chapter_generator import ChapterGenerationService
+from app.services.transcript_summary import TranscriptSummaryService
+from app.services.wordcloud_generator import WordCloudGenerationService
 from app.instagram.client import InstagramClient
 from app.instagram.comment_fetcher import InstagramCrawleeCommentFetcher
 from app.instagram.profile_fetcher import InstagramProfileFetcher
@@ -62,3 +65,21 @@ def get_transcription_service() -> WhisperTranscriberService:
 
 def get_settings_dependency() -> Settings:
     return get_settings()
+
+
+@lru_cache(maxsize=1)
+def get_chapter_generation_service() -> ChapterGenerationService:
+    settings = get_settings()
+    return ChapterGenerationService(settings=settings)
+
+
+@lru_cache(maxsize=1)
+def get_transcript_summary_service() -> TranscriptSummaryService:
+    settings = get_settings()
+    return TranscriptSummaryService(settings=settings)
+
+
+@lru_cache(maxsize=1)
+def get_wordcloud_generation_service() -> WordCloudGenerationService:
+    settings = get_settings()
+    return WordCloudGenerationService(settings=settings)
