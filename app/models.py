@@ -150,3 +150,27 @@ class WordCloudRequest(BaseModel):
 
 class WordCloudResponse(BaseModel):
     image_path: str
+
+
+class VideoVisualAnalysisResponse(BaseModel):
+    analysis_id: str
+    average_brightness: float
+    std_dev_brightness: float
+    scene_cut_timestamps: List[float] = Field(default_factory=list)
+    brightness_plot_path: str
+    stats_path: Optional[str] = None
+
+
+class VideoAudioAnalysisResponse(BaseModel):
+    analysis_id: str
+    average_pitch_hz: float
+    std_dev_pitch_hz: float
+    spectrogram_plot_path: str
+    stats_path: Optional[str] = None
+
+
+class VideoFullAnalysisResponse(BaseModel):
+    analysis_id: str
+    visual: VideoVisualAnalysisResponse
+    audio: VideoAudioAnalysisResponse
+    stats_path: str

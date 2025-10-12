@@ -15,3 +15,7 @@ crawlee
 google-generativeai
 wordcloud
 matplotlib
+librosa
+numpy
+opencv-python
+plotly

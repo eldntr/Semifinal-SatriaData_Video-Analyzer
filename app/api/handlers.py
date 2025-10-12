@@ -13,6 +13,7 @@ from app.dependencies import (
     get_chapter_generation_service,
     get_transcript_summary_service,
     get_wordcloud_generation_service,
+    get_video_analysis_service,
 )
 from app.google_drive.exceptions import (
     GoogleDriveDownloadError,
@@ -48,6 +49,9 @@ from app.models import (
     SummaryResponse,
     WordCloudRequest,
     WordCloudResponse,
+    VideoVisualAnalysisResponse,
+    VideoAudioAnalysisResponse,
+    VideoFullAnalysisResponse,
 )
 from app.services.google_drive_downloader import GoogleDriveDownloaderService
 from app.services.instagram_scraper import InstagramScraperService
@@ -64,11 +68,13 @@ from app.services.wordcloud_generator import (
     WordCloudGenerationError,
     WordCloudGenerationService,
 )
+from app.services.video_analysis import VideoAnalysisService
 from app.transcription.exceptions import (
     TranscriptionError,
     TranscriptionModelError,
     TranscriptionProcessingError,
 )
+from app.video_analysis.exceptions import VideoAnalysisError
 from app.transcription.service import WhisperTranscriberService
 
 router = APIRouter()
@@ -78,6 +84,7 @@ media_router = APIRouter(prefix="/media", tags=["media"])
 chapters_router = APIRouter(prefix="/chapters", tags=["chapters"])
 summary_router = APIRouter(prefix="/summary", tags=["summary"])
 wordcloud_router = APIRouter(prefix="/wordcloud", tags=["wordcloud"])
+video_analysis_router = APIRouter(prefix="/video-analysis", tags=["video-analysis"])
 
 
 def _to_profile(profile: InstagramProfile | None) -> UserProfile | None:
@@ -296,9 +303,94 @@ async def generate_wordcloud(
         ) from exc
 
 
+@video_analysis_router.post("/visual", response_model=VideoVisualAnalysisResponse)
+async def analyze_video_visual(
+    file: UploadFile = File(...),
+    video_id: Optional[str] = Form(None),
+    service: VideoAnalysisService = Depends(get_video_analysis_service),
+) -> VideoVisualAnalysisResponse:
+    try:
+        result = await service.analyze_visual(file, video_id=video_id)
+    except VideoAnalysisError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+    return VideoVisualAnalysisResponse(
+        analysis_id=result.analysis_id,
+        average_brightness=result.average_brightness,
+        std_dev_brightness=result.std_dev_brightness,
+        scene_cut_timestamps=result.scene_cut_timestamps,
+        brightness_plot_path=str(result.brightness_plot_path),
+        stats_path=str(result.stats_path) if result.stats_path else None,
+    )
+
+
+@video_analysis_router.post("/audio", response_model=VideoAudioAnalysisResponse)
+async def analyze_video_audio(
+    file: UploadFile = File(...),
+    video_id: Optional[str] = Form(None),
+    service: VideoAnalysisService = Depends(get_video_analysis_service),
+) -> VideoAudioAnalysisResponse:
+    try:
+        result = await service.analyze_audio(file, video_id=video_id)
+    except VideoAnalysisError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+    return VideoAudioAnalysisResponse(
+        analysis_id=result.analysis_id,
+        average_pitch_hz=result.average_pitch_hz,
+        std_dev_pitch_hz=result.std_dev_pitch_hz,
+        spectrogram_plot_path=str(result.spectrogram_plot_path),
+        stats_path=str(result.stats_path) if result.stats_path else None,
+    )
+
+
+@video_analysis_router.post("/full", response_model=VideoFullAnalysisResponse)
+async def analyze_video_full(
+    file: UploadFile = File(...),
+    video_id: Optional[str] = Form(None),
+    service: VideoAnalysisService = Depends(get_video_analysis_service),
+) -> VideoFullAnalysisResponse:
+    try:
+        combined = await service.analyze_full(file, video_id=video_id)
+    except VideoAnalysisError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+    visual_response = VideoVisualAnalysisResponse(
+        analysis_id=combined.visual.analysis_id,
+        average_brightness=combined.visual.average_brightness,
+        std_dev_brightness=combined.visual.std_dev_brightness,
+        scene_cut_timestamps=combined.visual.scene_cut_timestamps,
+        brightness_plot_path=str(combined.visual.brightness_plot_path),
+        stats_path=str(combined.stats_path),
+    )
+    audio_response = VideoAudioAnalysisResponse(
+        analysis_id=combined.audio.analysis_id,
+        average_pitch_hz=combined.audio.average_pitch_hz,
+        std_dev_pitch_hz=combined.audio.std_dev_pitch_hz,
+        spectrogram_plot_path=str(combined.audio.spectrogram_plot_path),
+        stats_path=str(combined.stats_path),
+    )
+    return VideoFullAnalysisResponse(
+        analysis_id=combined.analysis_id,
+        visual=visual_response,
+        audio=audio_response,
+        stats_path=str(combined.stats_path),
+    )
+
+
 router.include_router(instagram_router)
 router.include_router(gdrive_router)
 router.include_router(media_router)
 router.include_router(chapters_router)
 router.include_router(summary_router)
 router.include_router(wordcloud_router)
+router.include_router(video_analysis_router)

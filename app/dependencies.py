@@ -13,6 +13,7 @@ from app.services.media_converter import VideoAudioConverterService
 from app.services.chapter_generator import ChapterGenerationService
 from app.services.transcript_summary import TranscriptSummaryService
 from app.services.wordcloud_generator import WordCloudGenerationService
+from app.services.video_analysis import VideoAnalysisService
 from app.instagram.client import InstagramClient
 from app.instagram.comment_fetcher import InstagramCrawleeCommentFetcher
 from app.instagram.profile_fetcher import InstagramProfileFetcher
@@ -20,6 +21,7 @@ from app.instagram.view_fetcher import InstagramCrawleeViewFetcher
 from app.instagram.storage import MediaStorage
 from app.transcription.storage import TranscriptionStorage
 from app.transcription.service import WhisperTranscriberService
+from app.video_analysis.storage import VideoAnalysisStorage
 
 
 @lru_cache(maxsize=1)
@@ -83,3 +85,10 @@ def get_transcript_summary_service() -> TranscriptSummaryService:
 def get_wordcloud_generation_service() -> WordCloudGenerationService:
     settings = get_settings()
     return WordCloudGenerationService(settings=settings)
+
+
+@lru_cache(maxsize=1)
+def get_video_analysis_service() -> VideoAnalysisService:
+    settings = get_settings()
+    storage = VideoAnalysisStorage(settings.media_directory / "video-analysis")
+    return VideoAnalysisService(storage=storage)
