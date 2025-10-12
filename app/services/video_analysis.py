@@ -299,7 +299,6 @@ class VideoAnalysisService:
             )
         )
         fig.update_layout(
-            title_text=f"<b>Fluktuasi Kecerahan (Video {video_id})</b>",
             xaxis_title="Waktu (detik)",
             yaxis_title="Tingkat Kecerahan (0-255)",
             plot_bgcolor="#1E212A",
@@ -328,7 +327,6 @@ class VideoAnalysisService:
             )
         )
         fig.update_layout(
-            title_text=f"<b>Audio Spectrogram (Video {video_id})</b>",
             xaxis_title="Waktu (detik)",
             yaxis_title="Frekuensi (Hz)",
             plot_bgcolor="#1E212A",
