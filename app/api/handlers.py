@@ -322,7 +322,7 @@ async def analyze_video_visual(
         average_brightness=result.average_brightness,
         std_dev_brightness=result.std_dev_brightness,
         scene_cut_timestamps=result.scene_cut_timestamps,
-        brightness_plot_path=str(result.brightness_plot_path),
+        brightness_plot_html=result.brightness_plot_html,
         stats_path=str(result.stats_path) if result.stats_path else None,
     )
 
@@ -345,7 +345,7 @@ async def analyze_video_audio(
         analysis_id=result.analysis_id,
         average_pitch_hz=result.average_pitch_hz,
         std_dev_pitch_hz=result.std_dev_pitch_hz,
-        spectrogram_plot_path=str(result.spectrogram_plot_path),
+        spectrogram_plot_html=result.spectrogram_plot_html,
         stats_path=str(result.stats_path) if result.stats_path else None,
     )
 
@@ -369,14 +369,14 @@ async def analyze_video_full(
         average_brightness=combined.visual.average_brightness,
         std_dev_brightness=combined.visual.std_dev_brightness,
         scene_cut_timestamps=combined.visual.scene_cut_timestamps,
-        brightness_plot_path=str(combined.visual.brightness_plot_path),
+        brightness_plot_html=combined.visual.brightness_plot_html,
         stats_path=str(combined.stats_path),
     )
     audio_response = VideoAudioAnalysisResponse(
         analysis_id=combined.audio.analysis_id,
         average_pitch_hz=combined.audio.average_pitch_hz,
         std_dev_pitch_hz=combined.audio.std_dev_pitch_hz,
-        spectrogram_plot_path=str(combined.audio.spectrogram_plot_path),
+        spectrogram_plot_html=combined.audio.spectrogram_plot_html,
         stats_path=str(combined.stats_path),
     )
     return VideoFullAnalysisResponse(

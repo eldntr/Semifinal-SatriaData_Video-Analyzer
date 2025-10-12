@@ -91,14 +91,14 @@ class VideoAnalysisService:
                 average_brightness=visual_result.average_brightness,
                 std_dev_brightness=visual_result.std_dev_brightness,
                 scene_cut_timestamps=visual_result.scene_cut_timestamps,
-                brightness_plot_path=visual_result.brightness_plot_path,
+                brightness_plot_html=visual_result.brightness_plot_html,
                 stats_path=workspace.combined_stats_path,
             )
             combined_audio = AudioAnalysisResult(
                 analysis_id=audio_result.analysis_id,
                 average_pitch_hz=audio_result.average_pitch_hz,
                 std_dev_pitch_hz=audio_result.std_dev_pitch_hz,
-                spectrogram_plot_path=audio_result.spectrogram_plot_path,
+                spectrogram_plot_html=audio_result.spectrogram_plot_html,
                 stats_path=workspace.combined_stats_path,
             )
             return CombinedAnalysisResult(
@@ -128,8 +128,7 @@ class VideoAnalysisService:
         stats_path: Optional[Path],
     ) -> Tuple[VisualAnalysisResult, Dict[str, object]]:
         metrics = self._compute_visual_metrics(workspace.video_path)
-        self._create_brightness_plot(
-            workspace.brightness_plot_path,
+        plot_html = self._create_brightness_plot(
             metrics["timestamps"],
             metrics["brightness_scores"],
             workspace.identifier,
@@ -149,7 +148,7 @@ class VideoAnalysisService:
             average_brightness=float(visual_stats["rata_rata_kecerahan"]),
             std_dev_brightness=float(visual_stats["std_dev_kecerahan"]),
             scene_cut_timestamps=metrics["scene_cuts"],
-            brightness_plot_path=workspace.brightness_plot_path,
+            brightness_plot_html=plot_html,
             stats_path=stats_path,
         )
         return result, visual_stats
@@ -160,8 +159,7 @@ class VideoAnalysisService:
         stats_path: Optional[Path],
     ) -> Tuple[AudioAnalysisResult, Dict[str, object]]:
         metrics = self._compute_audio_metrics(workspace)
-        self._create_spectrogram_plot(
-            workspace.spectrogram_plot_path,
+        plot_html = self._create_spectrogram_plot(
             metrics["spectrogram_db"],
             metrics["times"],
             metrics["frequencies"],
@@ -179,7 +177,7 @@ class VideoAnalysisService:
             analysis_id=workspace.identifier,
             average_pitch_hz=float(audio_stats["rata_rata_pitch_hz"]),
             std_dev_pitch_hz=float(audio_stats["std_dev_pitch_hz"]),
-            spectrogram_plot_path=workspace.spectrogram_plot_path,
+            spectrogram_plot_html=plot_html,
             stats_path=stats_path,
         )
         return result, audio_stats
@@ -287,11 +285,10 @@ class VideoAnalysisService:
 
     @staticmethod
     def _create_brightness_plot(
-        output_path: Path,
         timestamps: list[float],
         brightness_scores: list[float],
         video_id: str,
-    ) -> None:
+    ) -> str:
         fig = go.Figure()
         fig.add_trace(
             go.Scatter(
@@ -311,16 +308,15 @@ class VideoAnalysisService:
         )
         fig.update_xaxes(gridcolor="rgba(255, 255, 255, 0.1)")
         fig.update_yaxes(gridcolor="rgba(255, 255, 255, 0.1)")
-        fig.write_html(str(output_path))
+        return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
     @staticmethod
     def _create_spectrogram_plot(
-        output_path: Path,
         spectrogram_db: np.ndarray,
         times: np.ndarray,
         frequencies: np.ndarray,
         video_id: str,
-    ) -> None:
+    ) -> str:
         fig = go.Figure()
         fig.add_trace(
             go.Heatmap(
@@ -341,9 +337,8 @@ class VideoAnalysisService:
         )
         fig.update_xaxes(gridcolor="rgba(255, 255, 255, 0.1)")
         fig.update_yaxes(gridcolor="rgba(255, 255, 255, 0.1)")
-        fig.write_html(str(output_path))
+        return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
-    @staticmethod
     def _extract_audio(self, video_path: Path, audio_path: Path) -> None:
         ffmpeg_executable = self._ffmpeg_path or self._resolve_ffmpeg_path()
         if not ffmpeg_executable:

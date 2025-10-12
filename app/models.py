@@ -157,7 +157,7 @@ class VideoVisualAnalysisResponse(BaseModel):
     average_brightness: float
     std_dev_brightness: float
     scene_cut_timestamps: List[float] = Field(default_factory=list)
-    brightness_plot_path: str
+    brightness_plot_html: str
     stats_path: Optional[str] = None
 
 
@@ -165,7 +165,7 @@ class VideoAudioAnalysisResponse(BaseModel):
     analysis_id: str
     average_pitch_hz: float
     std_dev_pitch_hz: float
-    spectrogram_plot_path: str
+    spectrogram_plot_html: str
     stats_path: Optional[str] = None
 
 

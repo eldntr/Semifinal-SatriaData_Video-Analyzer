@@ -14,8 +14,6 @@ class VideoAnalysisWorkspace:
     directory: Path
     video_path: Path
     audio_path: Path
-    brightness_plot_path: Path
-    spectrogram_plot_path: Path
     visual_stats_path: Path
     audio_stats_path: Path
     combined_stats_path: Path
@@ -45,8 +43,6 @@ class VideoAnalysisStorage:
         suffix = Path(filename or "").suffix or ".mp4"
         video_path = workspace_dir / f"source{suffix}"
         audio_path = workspace_dir / "temp_audio.wav"
-        brightness_plot_path = workspace_dir / "brightness_plot.html"
-        spectrogram_plot_path = workspace_dir / "spectrogram_plot.html"
         visual_stats_path = workspace_dir / "visual_stats.json"
         audio_stats_path = workspace_dir / "audio_stats.json"
         combined_stats_path = workspace_dir / "combined_stats.json"
@@ -56,8 +52,6 @@ class VideoAnalysisStorage:
             directory=workspace_dir,
             video_path=video_path,
             audio_path=audio_path,
-            brightness_plot_path=brightness_plot_path,
-            spectrogram_plot_path=spectrogram_plot_path,
             visual_stats_path=visual_stats_path,
             audio_stats_path=audio_stats_path,
             combined_stats_path=combined_stats_path,

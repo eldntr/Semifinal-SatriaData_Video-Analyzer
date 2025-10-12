@@ -11,7 +11,7 @@ class VisualAnalysisResult:
     average_brightness: float
     std_dev_brightness: float
     scene_cut_timestamps: List[float]
-    brightness_plot_path: Path
+    brightness_plot_html: str
     stats_path: Optional[Path] = None
 
 
@@ -20,7 +20,7 @@ class AudioAnalysisResult:
     analysis_id: str
     average_pitch_hz: float
     std_dev_pitch_hz: float
-    spectrogram_plot_path: Path
+    spectrogram_plot_html: str
     stats_path: Optional[Path] = None
 
 
