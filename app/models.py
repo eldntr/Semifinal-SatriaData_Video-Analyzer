@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import AnyHttpUrl, BaseModel, Field, HttpUrl
 
@@ -174,3 +174,27 @@ class VideoFullAnalysisResponse(BaseModel):
     visual: VideoVisualAnalysisResponse
     audio: VideoAudioAnalysisResponse
     stats_path: str
+
+
+class PlotHTML(BaseModel):
+    title: str
+    html: str
+
+
+class DatasetVisualizationResponse(BaseModel):
+    plots: Dict[str, PlotHTML]
+
+
+class DatasetTableRow(BaseModel):
+    id: int
+    summary_judul: Optional[str] = None
+    view: Optional[float] = None
+    persentase_like: Optional[float] = None
+    pc1_scaled: Optional[float] = Field(default=None, alias="pc1_scaled")
+
+    class Config:
+        populate_by_name = True
+
+
+class DatasetTableResponse(BaseModel):
+    rows: List[DatasetTableRow] = Field(default_factory=list)

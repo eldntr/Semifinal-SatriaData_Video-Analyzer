@@ -1,11 +1,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 
 from app.dependencies import (
+    get_dataset_visualization_service,
     get_google_drive_service,
     get_instagram_service,
     get_media_converter_service,
@@ -52,6 +54,8 @@ from app.models import (
     VideoVisualAnalysisResponse,
     VideoAudioAnalysisResponse,
     VideoFullAnalysisResponse,
+    DatasetVisualizationResponse,
+    DatasetTableResponse,
 )
 from app.services.google_drive_downloader import GoogleDriveDownloaderService
 from app.services.instagram_scraper import InstagramScraperService
@@ -69,6 +73,13 @@ from app.services.wordcloud_generator import (
     WordCloudGenerationService,
 )
 from app.services.video_analysis import VideoAnalysisService
+from app.services.dataset_visualization import (
+    DatasetVisualizationService,
+    DatasetEmptyError,
+    DatasetVisualizationError,
+    DatasetNotFoundError,
+    UnknownVisualizationType,
+)
 from app.transcription.exceptions import (
     TranscriptionError,
     TranscriptionModelError,
@@ -85,6 +96,7 @@ chapters_router = APIRouter(prefix="/chapters", tags=["chapters"])
 summary_router = APIRouter(prefix="/summary", tags=["summary"])
 wordcloud_router = APIRouter(prefix="/wordcloud", tags=["wordcloud"])
 video_analysis_router = APIRouter(prefix="/video-analysis", tags=["video-analysis"])
+analytics_router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
 def _to_profile(profile: InstagramProfile | None) -> UserProfile | None:
@@ -387,6 +399,73 @@ async def analyze_video_full(
     )
 
 
+@analytics_router.get("/visualizations", response_model=DatasetVisualizationResponse)
+async def get_dataset_visualization(
+    visualization_type: str = Query(..., alias="type"),
+    post_created_from: Optional[datetime] = Query(None),
+    post_created_to: Optional[datetime] = Query(None),
+    service: DatasetVisualizationService = Depends(get_dataset_visualization_service),
+) -> DatasetVisualizationResponse:
+    try:
+        plots = service.generate_html(
+            visualization_type,
+            created_from=post_created_from,
+            created_to=post_created_to,
+        )
+    except DatasetNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+    except UnknownVisualizationType as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except DatasetEmptyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except DatasetVisualizationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+    return DatasetVisualizationResponse(plots=plots)
+
+
+@analytics_router.get("/table", response_model=DatasetTableResponse)
+async def get_dataset_table(
+    post_created_from: Optional[datetime] = Query(None),
+    post_created_to: Optional[datetime] = Query(None),
+    service: DatasetVisualizationService = Depends(get_dataset_visualization_service),
+) -> DatasetTableResponse:
+    try:
+        rows = service.generate_table_data(
+            created_from=post_created_from,
+            created_to=post_created_to,
+        )
+    except DatasetNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+    except DatasetEmptyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except DatasetVisualizationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+    return DatasetTableResponse(rows=rows)
+
+
 router.include_router(instagram_router)
 router.include_router(gdrive_router)
 router.include_router(media_router)
@@ -394,3 +473,4 @@ router.include_router(chapters_router)
 router.include_router(summary_router)
 router.include_router(wordcloud_router)
 router.include_router(video_analysis_router)
+router.include_router(analytics_router)

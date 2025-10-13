@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from app.config import Settings, get_settings
 from app.google_drive.client import GoogleDriveClient
@@ -14,6 +15,7 @@ from app.services.chapter_generator import ChapterGenerationService
 from app.services.transcript_summary import TranscriptSummaryService
 from app.services.wordcloud_generator import WordCloudGenerationService
 from app.services.video_analysis import VideoAnalysisService
+from app.services.dataset_visualization import DatasetVisualizationService
 from app.instagram.client import InstagramClient
 from app.instagram.comment_fetcher import InstagramCrawleeCommentFetcher
 from app.instagram.profile_fetcher import InstagramProfileFetcher
@@ -92,3 +94,9 @@ def get_video_analysis_service() -> VideoAnalysisService:
     settings = get_settings()
     storage = VideoAnalysisStorage(settings.media_directory / "video-analysis")
     return VideoAnalysisService(storage=storage)
+
+
+@lru_cache(maxsize=1)
+def get_dataset_visualization_service() -> DatasetVisualizationService:
+    dataset_path = Path(__file__).resolve().parent.parent / "final_dataset.json"
+    return DatasetVisualizationService(dataset_path=dataset_path)
