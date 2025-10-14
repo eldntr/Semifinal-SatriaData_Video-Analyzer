@@ -179,6 +179,7 @@ class DatasetVisualizationService:
 
         plots: Dict[str, Dict[str, str]] = {}
         for key, title, fig in figures:
+            fig.update_layout(title=None)
             if key in plots:
                 raise DatasetVisualizationError(
                     f"Duplicate plot key '{key}' encountered."
