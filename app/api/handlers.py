@@ -56,6 +56,7 @@ from app.models import (
     VideoFullAnalysisResponse,
     DatasetVisualizationResponse,
     DatasetTableResponse,
+    DatasetPieChartResponse,
 )
 from app.services.google_drive_downloader import GoogleDriveDownloaderService
 from app.services.instagram_scraper import InstagramScraperService
@@ -464,6 +465,36 @@ async def get_dataset_table(
         ) from exc
 
     return DatasetTableResponse(rows=rows)
+
+
+@analytics_router.get("/piechart", response_model=DatasetPieChartResponse)
+async def get_dataset_piechart(
+    post_created_from: Optional[datetime] = Query(None),
+    post_created_to: Optional[datetime] = Query(None),
+    service: DatasetVisualizationService = Depends(get_dataset_visualization_service),
+) -> DatasetPieChartResponse:
+    try:
+        plot = service.generate_topic_distribution_pie(
+            created_from=post_created_from,
+            created_to=post_created_to,
+        )
+    except DatasetNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+    except DatasetEmptyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except DatasetVisualizationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+    return DatasetPieChartResponse(plot=plot)
 
 
 router.include_router(instagram_router)

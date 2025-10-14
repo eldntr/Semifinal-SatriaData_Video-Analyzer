@@ -198,3 +198,7 @@ class DatasetTableRow(BaseModel):
 
 class DatasetTableResponse(BaseModel):
     rows: List[DatasetTableRow] = Field(default_factory=list)
+
+
+class DatasetPieChartResponse(BaseModel):
+    plot: PlotHTML

@@ -354,6 +354,61 @@ class DatasetVisualizationService:
         ]
         return self._combine_plots(*plots)
 
+    def generate_topic_distribution_pie(
+        self,
+        created_from: Optional[datetime],
+        created_to: Optional[datetime],
+    ) -> Dict[str, str]:
+        df = self._get_filtered_dataframe(created_from, created_to)
+        if "summary_topic" not in df:
+            raise DatasetVisualizationError("Column 'summary_topic' missing from dataset.")
+
+        topics = df["summary_topic"].dropna().astype(str)
+        if topics.empty:
+            raise DatasetEmptyError("Tidak ada data topik untuk visualisasi pie chart.")
+
+        topic_counts = topics.value_counts().sort_values(ascending=False)
+        if topic_counts.empty:
+            raise DatasetEmptyError("Tidak ada data topik untuk visualisasi pie chart.")
+
+        required_colors = len(topic_counts)
+        color_cycles = (required_colors // len(OCEANIC_PALETTE)) + 1
+        colors = (OCEANIC_PALETTE * color_cycles)[:required_colors]
+        pull = [0.05] + [0.0] * (required_colors - 1) if required_colors else []
+
+        fig = go.Figure(
+            data=[
+                go.Pie(
+                    labels=topic_counts.index.tolist(),
+                    values=topic_counts.values.tolist(),
+                    hole=0.4,
+                    marker=dict(
+                        colors=colors,
+                        line=dict(color=BACKGROUND_COLOR, width=3),
+                    ),
+                    textinfo="percent+label",
+                    insidetextorientation="radial",
+                    pull=pull,
+                )
+            ]
+        )
+
+        fig.update_layout(
+            template=CUSTOM_TEMPLATE,
+            height=600,
+            showlegend=True,
+            legend_title_text="Topik",
+        )
+        fig.update_traces(textposition="inside", textfont_size=14)
+        fig.update_layout(title=None, title_text=None)
+        if getattr(fig.layout, "title", None):
+            fig.layout.title.text = None
+
+        return {
+            "title": "Distribusi Konten Berdasarkan Topik",
+            "html": fig.to_html(full_html=False, include_plotlyjs="cdn"),
+        }
+
     def _generate_view_top_users(self, df: pd.DataFrame) -> Dict[str, Dict[str, str]]:
         df_view = df[df["view_count"] > 0].copy()
         if df_view.empty:
